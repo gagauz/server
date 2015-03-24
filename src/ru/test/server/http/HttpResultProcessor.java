@@ -1,11 +1,11 @@
 package ru.test.server.http;
 
-import ru.test.server.RequestProcessor;
+import ru.test.server.Processor;
 import ru.test.server.utils.IOUtils;
 
 import java.io.IOException;
 
-public class HttpResultProcessor implements RequestProcessor<HttpRequest, HttpResponse> {
+public class HttpResultProcessor implements Processor<HttpRequest, HttpResponse> {
 
     @Override
     public boolean process(HttpRequest request, HttpResponse response) throws IOException {

@@ -1,9 +1,12 @@
 package ru.test.server.http;
 
+import java.io.OutputStream;
+
 import ru.test.server.Response;
 
-public interface HttpResponse extends Response {
-    void addHeader(String name, String value);
+public class HttpResponse extends Response {
 
-    void addCookie(Cookie cookie);
+    public HttpResponse(OutputStream outputStream) {
+        super(outputStream);
+    }
 }
