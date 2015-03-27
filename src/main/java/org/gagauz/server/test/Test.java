@@ -3,11 +3,14 @@ package org.gagauz.server.test;
 import org.gagauz.server.ServerConfig;
 import org.gagauz.server.http.HttpServer;
 
+import java.nio.charset.Charset;
+
 public class Test {
     public static void main(String[] args) {
         HttpServer s = new HttpServer();
         ServerConfig.setServerThreadCount(10);
         s.setDocumentRoot("R:\\servers\\home\\localhost\\www");
+        s.setCharset(Charset.forName("utf-8"));
         s.start(999);
         //        Socket st;
         //        try {

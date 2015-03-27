@@ -1,7 +1,9 @@
 package org.gagauz.server.http;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -37,7 +39,8 @@ public class PhpProcessor extends HttpFileProcessor {
 
     @Override
     protected void processFile(File file, HttpRequest request, HttpResponse response) throws IOException {
-        response.addHeader("Content-Type", "text/html");
+        response.addHeader("Content-Type", "text/html; charset=" + response.getCharset());
+        response.addHeader("Date", new Date().toGMTString());
 
         ProcessBuilder pb = new ProcessBuilder("php", "-f", file.getAbsolutePath());
         pb.environment().putAll(env);
@@ -53,13 +56,17 @@ public class PhpProcessor extends HttpFileProcessor {
         pb.environment().put("REQUEST_URI", request.getRequestUri());
 
         for (Entry<String, String> e : request.getHeaders().entrySet()) {
-            System.out.println("HTTP_" + e.getKey().toUpperCase().replace('-', '_'));
+            System.out.println("HTTP_" + e.getKey().toUpperCase().replace('-', '_') + " " + e.getValue());
             pb.environment().put("HTTP_" + e.getKey().toUpperCase().replace('-', '_'), e.getValue());
         }
 
         //        Process p = Runtime.getRuntime().exec("php -f " + );
+
+        long start = System.currentTimeMillis();
         Process p = pb.start();
-        response.print(p.getInputStream());
+        System.out.println("PHP exe time " + (System.currentTimeMillis() - start) + " ms");
+        response.print(new BufferedInputStream(p.getInputStream()));
+        System.out.println("PHP output time " + (System.currentTimeMillis() - start) + " ms");
         //        try {
         //            p.waitFor();
         //        } catch (InterruptedException e) {
