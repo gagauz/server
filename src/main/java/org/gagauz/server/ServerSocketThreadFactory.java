@@ -1,4 +1,4 @@
-package ru.test.server;
+package org.gagauz.server;
 
 import java.util.concurrent.ThreadFactory;
 
