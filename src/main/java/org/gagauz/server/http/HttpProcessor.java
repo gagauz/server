@@ -1,17 +1,19 @@
 package org.gagauz.server.http;
 
-import org.gagauz.server.SocketProcessor;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 
+import org.gagauz.server.SocketProcessor;
+
 public class HttpProcessor extends SocketProcessor {
 
-    private HttpServer container;
+    private final HttpServer container;
+    private final File root;
 
     public HttpProcessor(HttpServer container) {
         this.container = container;
+        root = new File(container.getDocumentRoot());
     }
 
     @Override
@@ -25,7 +27,7 @@ public class HttpProcessor extends SocketProcessor {
         System.out.println(new String(request.getBytes()));
         System.out.println(request.getParameters());
 
-        File file = new File(container.getDocumentRoot() + request.getPath());
+        File file = new File(root, request.getPath());
         if (file.exists()) {
             if (file.canRead()) {
                 if (file.isFile()) {
@@ -46,7 +48,7 @@ public class HttpProcessor extends SocketProcessor {
                     }
                     for (File f : file.listFiles()) {
                         response.print(" |-<a href=\"");
-                        response.print(f.getName());
+                        response.print(getUrl(f, root));
                         response.print("\">");
                         response.print(f.getName());
                         response.println("</a><br/>");
@@ -67,7 +69,18 @@ public class HttpProcessor extends SocketProcessor {
             response.commit();
             System.out.println("Commit response");
         }
+        System.out.println("Response " + response.getStatus());
 
         socket.close();
+    }
+
+    String getUrl(File file, File root) {
+        StringBuilder sb = new StringBuilder(file.getName());
+        file = file.getParentFile();
+        while (file != null && !file.equals(root)) {
+            sb.insert(0, file.getName() + '/');
+            file = file.getParentFile();
+        }
+        return sb.toString();
     }
 }

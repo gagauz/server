@@ -1,7 +1,5 @@
 package org.gagauz.server.http;
 
-import org.gagauz.server.Request;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
@@ -11,10 +9,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.gagauz.server.Request;
+
 public class HttpRequest extends Request {
 
-    private Charset charset = Charset.defaultCharset();
+    private final Charset charset = Charset.defaultCharset();
     private String method;
+    private String path;
+    private String query;
     private String requestUri;
     private String protocolVersion;
     private final Map<String, String> headers = new HashMap<String, String>();
@@ -51,8 +53,11 @@ public class HttpRequest extends Request {
     }
 
     public String getPath() {
-        int i = requestUri.indexOf('?');
-        return i > -1 ? requestUri.substring(0, i) : requestUri;
+        if (null == path) {
+            int i = requestUri.indexOf('?');
+            path = URLDecoder.decode(i > -1 ? requestUri.substring(0, i) : requestUri);
+        }
+        return path;
     }
 
     public String getProtocolVersion() {
@@ -60,8 +65,11 @@ public class HttpRequest extends Request {
     }
 
     public String getQuery() {
-        int i = requestUri.indexOf('?');
-        return i > -1 ? requestUri.substring(i + 1) : null;
+        if (null == query) {
+            int i = requestUri.indexOf('?');
+            query = i > -1 ? URLDecoder.decode(requestUri.substring(i + 1)) : null;
+        }
+        return query;
     }
 
     public String getRequestUri() {
@@ -70,7 +78,7 @@ public class HttpRequest extends Request {
 
     public Map<String, Object> getParameters() throws IOException {
         if (null == parameters) {
-            Map<String, Object> params = parseUrlEncodedParameters(getQuery(), urlEncodedDecoder);
+            Map<String, Object> params = parseUrlEncodedParameters(getQuery(), textPlainDecoder);
             String ct = getHeaders().get("Content-Type");
             if (ct != null) {
                 if (ct.startsWith("application/x-www-form-urlencoded")) {
@@ -147,7 +155,7 @@ public class HttpRequest extends Request {
 
         @Override
         public String decode(String string, String charset) {
-            return string.replace('+', ' ');
+            return string;
         }
 
     };
