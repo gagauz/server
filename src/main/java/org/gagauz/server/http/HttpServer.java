@@ -9,6 +9,9 @@ import java.nio.charset.Charset;
 public class HttpServer extends Server {
 
     private String documentRoot;
+    private String sessionIdCookieName;
+    private HttpSessionManager httpSessionManager;
+
     private Charset charset = Charset.defaultCharset();
 
     public String getDocumentRoot() {
@@ -30,6 +33,22 @@ public class HttpServer extends Server {
 
     public void setCharset(Charset charset) {
         this.charset = charset;
+    }
+
+    public String getSessionIdCookieName() {
+        return sessionIdCookieName;
+    }
+
+    public void setSessionIdCookieName(String sessionIdCookieName) {
+        this.sessionIdCookieName = sessionIdCookieName;
+    }
+
+    public HttpSessionManager getSessionManager() {
+        return httpSessionManager;
+    }
+
+    public void setSessionManager(HttpSessionManager httpSessionManager) {
+        this.httpSessionManager = httpSessionManager;
     }
 
 }
