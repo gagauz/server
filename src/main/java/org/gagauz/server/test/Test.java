@@ -9,8 +9,10 @@ public class Test {
     public static void main(String[] args) {
         HttpServer s = new HttpServer();
         ServerConfig.setServerThreadCount(10);
-        s.setDocumentRoot("c:\\Users\\java\\apache-tomcat-6.0.41\\webapps");
+        // s.setDocumentRoot("c:\\Users\\java\\apache-tomcat-6.0.41\\webapps");
+        s.setDocumentRoot("/var/www/html");
         s.setCharset(Charset.forName("utf-8"));
+        s.setSessionIdCookieName("MYSSID");
         s.start(8099);
 
     }

@@ -1,11 +1,11 @@
 package org.gagauz.server.http;
 
-import org.gagauz.server.SocketProcessor;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.Socket;
+
+import org.gagauz.server.SocketProcessor;
 
 public class HttpProcessor extends SocketProcessor {
 
@@ -23,6 +23,8 @@ public class HttpProcessor extends SocketProcessor {
         HttpRequest request = new HttpRequest(socket, container);
         HttpResponse response = new HttpResponse(socket);
 
+        HttpRequestResponseHolder.set(request, response);
+
         System.out.println(request.getMethod());
         System.out.println(request.getRequestUri());
         System.out.println(request.getParameters());
@@ -33,15 +35,12 @@ public class HttpProcessor extends SocketProcessor {
             if (file.canRead()) {
                 if (file.isFile()) {
                     if (file.getName().endsWith(".php")) {
-                        new PhpProcessor(container).processFile(file, request,
-                                response);
+                        new PhpProcessor(container).processFile(file, request, response);
                     } else {
-                        new HttpFileProcessor(container).processFile(file,
-                                request, response);
+                        new HttpFileProcessor(container).processFile(file, request, response);
                     }
                 } else if (file.isDirectory()) {
-                    response.setHeader("Content-Type",
-                            "text/html;charset=UTF-8");
+                    response.setHeader("Content-Type", "text/html;charset=UTF-8");
                     response.print("<html><body>");
                     if (!file.getPath().equals(container.getDocumentRoot())) {
                         response.print("<a href=\"");
@@ -84,6 +83,9 @@ public class HttpProcessor extends SocketProcessor {
             System.out.println("unknown request");
             response.setStatus(HttpResult.Not_Found_404);
         }
+
+        HttpSession ss = request.getSession(true);
+        System.out.println(ss.getId());
 
         if (!response.isCommited()) {
             response.commit();

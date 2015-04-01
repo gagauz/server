@@ -1,16 +1,17 @@
 package org.gagauz.server.http;
 
-import org.gagauz.server.Server;
-import org.gagauz.server.SocketAcceptor;
-
+import java.net.HttpCookie;
 import java.net.Socket;
 import java.nio.charset.Charset;
+
+import org.gagauz.server.Server;
+import org.gagauz.server.SocketAcceptor;
 
 public class HttpServer extends Server {
 
     private String documentRoot;
     private String sessionIdCookieName;
-    private HttpSessionManager httpSessionManager;
+    private HttpSessionManager httpSessionManager = new HttpSessionManager();
 
     private Charset charset = Charset.defaultCharset();
 
@@ -51,4 +52,21 @@ public class HttpServer extends Server {
         this.httpSessionManager = httpSessionManager;
     }
 
+    public HttpSession getSession(boolean create) {
+        HttpSession session = null;
+        HttpRequest request = HttpRequestResponseHolder.getRequest();
+        HttpResponse response = HttpRequestResponseHolder.getResponse();
+        if (null != request) {
+            HttpCookie cookie = request.getCookies().get(sessionIdCookieName);
+            if (null != cookie) {
+                session = httpSessionManager.find(cookie.getValue());
+            }
+            if (null == session && create) {
+                session = httpSessionManager.create();
+                cookie = new HttpCookie(sessionIdCookieName, session.getId());
+                response.setCookie(cookie);
+            }
+        }
+        return session;
+    }
 }

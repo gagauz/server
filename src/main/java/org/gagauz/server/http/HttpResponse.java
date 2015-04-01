@@ -1,8 +1,5 @@
 package org.gagauz.server.http;
 
-import com.gagauz.common.utils.C;
-import org.gagauz.server.Response;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,9 +11,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.gagauz.server.Response;
+
+import com.gagauz.common.utils.C;
+
 public class HttpResponse extends Response {
 
-    private int bufferSize = 10000;
+    private final int bufferSize = 10000;
     private HttpResult status = HttpResult.OK_200;
     private Charset charset = Charset.defaultCharset();
     private final Map<String, String> headers;
@@ -45,9 +46,7 @@ public class HttpResponse extends Response {
 
     @Override
     public void commit() throws IOException {
-        getOutputStream()
-                .write(("HTTP/1.1 " + status.getStatus() + " "
-                        + status.getMessage() + "\r\n").getBytes(charset));
+        getOutputStream().write(("HTTP/1.1 " + status.getStatus() + " " + status.getMessage() + "\r\n").getBytes(charset));
         if (body.size() > 0) {
             setHeader("Content-Length", body.size());
         }

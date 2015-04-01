@@ -1,10 +1,5 @@
 package org.gagauz.server.http;
 
-import com.gagauz.common.utils.C;
-import org.gagauz.server.Request;
-import org.gagauz.server.utils.KeyValueParser;
-import org.gagauz.server.utils.KeyValueParser.ParseEventHandler;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
@@ -13,6 +8,12 @@ import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.gagauz.server.Request;
+import org.gagauz.server.utils.KeyValueParser;
+import org.gagauz.server.utils.KeyValueParser.ParseEventHandler;
+
+import com.gagauz.common.utils.C;
 
 public class HttpRequest extends Request {
 
@@ -26,10 +27,11 @@ public class HttpRequest extends Request {
     private Map<String, Object> parameters;
     private Map<String, HttpCookie> cookies;
     private HttpSession session;
-    private HttpServer httpServer;
+    private final HttpServer httpServer;
 
     public HttpRequest(Socket socket, HttpServer httpServer) throws IOException {
         super(socket);
+        this.httpServer = httpServer;
         init();
     }
 
@@ -57,8 +59,7 @@ public class HttpRequest extends Request {
     public String getPath() {
         if (null == path) {
             int i = requestUri.indexOf('?');
-            path = URLDecoder.decode(i > -1 ? requestUri.substring(0, i)
-                    : requestUri);
+            path = URLDecoder.decode(i > -1 ? requestUri.substring(0, i) : requestUri);
         }
         return path;
     }
@@ -70,8 +71,7 @@ public class HttpRequest extends Request {
     public String getQuery() {
         if (null == query) {
             int i = requestUri.indexOf('?');
-            query = i > -1 ? URLDecoder.decode(requestUri.substring(i + 1))
-                    : null;
+            query = i > -1 ? URLDecoder.decode(requestUri.substring(i + 1)) : null;
         }
         return query;
     }
@@ -82,13 +82,11 @@ public class HttpRequest extends Request {
 
     public Map<String, Object> getParameters() throws IOException {
         if (null == parameters) {
-            Map<String, Object> params = parseUrlEncodedParameters(getQuery(),
-                    textPlainDecoder);
+            Map<String, Object> params = parseUrlEncodedParameters(getQuery(), textPlainDecoder);
             String ct = getHeaders().get("Content-Type");
             if (ct != null) {
                 if (ct.startsWith("application/x-www-form-urlencoded")) {
-                    params.putAll(parseUrlEncodedParameters(new String(
-                            getBytes(), getCharset()), urlEncodedDecoder));
+                    params.putAll(parseUrlEncodedParameters(new String(getBytes(), getCharset()), urlEncodedDecoder));
                 } else if (ct.startsWith("multipart/form-data")) {
                     String boundary = "";
                     String l;
@@ -99,8 +97,7 @@ public class HttpRequest extends Request {
                         }
                     }
                 } else if (ct.startsWith("text/plain")) {
-                    params.putAll(parseUrlEncodedParameters(new String(
-                            getBytes(), getCharset()), textPlainDecoder));
+                    params.putAll(parseUrlEncodedParameters(new String(getBytes(), getCharset()), textPlainDecoder));
                 }
             }
             parameters = params;
@@ -115,11 +112,9 @@ public class HttpRequest extends Request {
             ParseEventHandler handler = new ParseEventHandler() {
                 @Override
                 public void onKeyValue(String key, String value) {
-                    key = key.trim().toLowerCase();
-                    if ("name".equals(key)) {
-                        HttpCookie cookie = new HttpCookie(key, value);
-                        cookies0.put(key, cookie);
-                    }
+                    key = key.trim();
+                    HttpCookie cookie = new HttpCookie(key, value);
+                    cookies0.put(key, cookie);
                 }
             };
             String cookie = getHeaders().get("Cookie");
@@ -139,8 +134,7 @@ public class HttpRequest extends Request {
         return null;
     }
 
-    protected Map<String, Object> parseUrlEncodedParameters(String data,
-                                                            Decoder decoder) {
+    protected Map<String, Object> parseUrlEncodedParameters(String data, Decoder decoder) {
         final Map<String, Object> parameters = new HashMap<String, Object>();
         if (null != data) {
             data = decoder.decode(data, getCharset().name());
@@ -160,22 +154,12 @@ public class HttpRequest extends Request {
     }
 
     public HttpSession getSession() {
-        if (null == session) {
-            session = httpServer.getSession(this, false);
-        }
-        return session;
-    }
-
-    private String getSessionId() {
-        return getCookies().get(httpServer.getSessionIdCookieName());
+        return getSession(false);
     }
 
     public HttpSession getSession(boolean create) {
-        if (!create) {
-            return getSession();
-        }
         if (null == session) {
-            session = httpServer.getSessionManager().createNewSession(this);
+            session = httpServer.getSession(create);
         }
         return session;
     }
