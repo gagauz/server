@@ -3,7 +3,6 @@ package org.gagauz.server.http;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
-import java.net.Socket;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -11,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.gagauz.server.Request;
+import org.gagauz.server.api.Connection;
 import org.gagauz.server.utils.KeyValueParser;
 import org.gagauz.server.utils.KeyValueParser.ParseEventHandler;
 import org.gagauz.utils.multimap.ListMultimap;
@@ -29,8 +29,8 @@ public class HttpRequest extends Request {
 	private HttpSession session;
 	private final HttpServer httpServer;
 
-	public HttpRequest(Socket socket, HttpServer httpServer) throws IOException {
-		super(socket);
+	public HttpRequest(Connection connection, HttpServer httpServer) {
+		super(connection);
 		this.httpServer = httpServer;
 		readRequestFromStream();
 	}
@@ -45,20 +45,26 @@ public class HttpRequest extends Request {
 		list.add(value);
 	}
 
-	private void readRequestFromStream() throws IOException {
-		method = readWord();
-		requestUri = readWord();
-		protocolVersion = readWord();
+	private void readRequestFromStream() {
+		try {
+			method = readWord();
 
-		while (true) {
-			String line = readLine();
-			if (null == line || "".equals(line)) {
-				break;
+			requestUri = readWord();
+			protocolVersion = readWord();
+
+			while (true) {
+				String line = readLine();
+				if (null == line || "".equals(line)) {
+					break;
+				}
+				int p = line.indexOf(':');
+				if (p > -1) {
+					headers.put(line.substring(0, p).trim(), line.substring(p + 1).trim());
+				}
 			}
-			int p = line.indexOf(':');
-			if (p > -1) {
-				headers.put(line.substring(0, p).trim(), line.substring(p + 1).trim());
-			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 

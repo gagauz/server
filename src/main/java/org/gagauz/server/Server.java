@@ -1,42 +1,46 @@
 package org.gagauz.server;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
+import org.gagauz.server.api.Connection;
+import org.gagauz.server.api.Processor;
+import org.gagauz.server.api.ServerConnection;
+import org.gagauz.server.api.ServerConnectionFactory;
+import org.gagauz.server.api.ThreadPool;
 
 public abstract class Server {
-	private ExecutorService executorService;
-	private ServerSocket server;
+	private ServerConnection serverSocket;
 
-	private String host = "localhost";
-	private int port;
+	protected abstract ServerConnectionFactory getServerConnectionFactory();
 
-	public synchronized void start(int port) {
+	protected abstract Processor getProcessor();
+
+	protected abstract ThreadPool getThreadPool();
+
+	public final synchronized void start(int port) {
+		System.out.println("Starting server on " + port + " port");
+		serverSocket = getServerConnectionFactory().createServerConnection(port);
+		System.out.println("Server started, waiting for connections...");
 		try {
-			System.out.println("Starting server on " + port + " port");
-			server = new ServerSocket(port);
-			System.out.println("Allocating " + ServerConfig.getServerMaxThreadCount() + " connection threads.");
-			executorService = Executors.newFixedThreadPool(ServerConfig.getServerMaxThreadCount());
-			Socket socket;
-			System.out.println("Server started, waiting for connections...");
-			while ((socket = server.accept()) != null) {
-				executorService.execute(getAcceptor(socket));
+			while (acceptConnection(serverSocket.accept())) {
+				// empty cycle
 			}
-
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	public void stop() throws IOException {
-		executorService.shutdown();
-		server.close();
+	private final boolean acceptConnection(final Connection connection) {
+		getThreadPool().append(() -> getProcessor().process(connection));
+		return true;
 	}
 
-	protected SocketAcceptor getAcceptor(Socket socket) {
-		return new SocketAcceptor(socket, new SocketProcessor());
+	public final synchronized void stop() {
+		try {
+			serverSocket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
-
 }

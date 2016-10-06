@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpCookie;
-import java.net.Socket;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,6 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.gagauz.server.Response;
+import org.gagauz.server.api.Connection;
 
 public class HttpResponse extends Response {
 
@@ -23,8 +23,8 @@ public class HttpResponse extends Response {
 	private List<HttpCookie> cookies;
 	protected final ByteArrayOutputStream body;
 
-	public HttpResponse(Socket socket) throws IOException {
-		super(socket);
+	public HttpResponse(Connection connection) {
+		super(connection);
 		headers = new HashMap<>();
 		body = new ByteArrayOutputStream();
 	}
