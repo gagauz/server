@@ -16,7 +16,7 @@ public class HttpFileProcessor {
 			HttpResponse response) throws IOException {
 		String mimeType = URLConnection
 				.guessContentTypeFromName(file.getName());
-		response.setHeader("Content-Type", mimeType);
+		response.setHeader("Content-Type", mimeType + ";charset=" + response.getCharset().name());
 		FileInputStream fis = new FileInputStream(file);
 		response.print(fis);
 	}

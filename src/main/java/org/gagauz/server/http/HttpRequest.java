@@ -6,183 +6,192 @@ import java.net.HttpCookie;
 import java.net.Socket;
 import java.net.URLDecoder;
 import java.nio.charset.Charset;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.gagauz.server.Request;
 import org.gagauz.server.utils.KeyValueParser;
 import org.gagauz.server.utils.KeyValueParser.ParseEventHandler;
-
-import com.gagauz.common.utils.C;
+import org.gagauz.utils.multimap.ListMultimap;
+import org.gagauz.utils.multimap.Multimaps;
 
 public class HttpRequest extends Request {
+	private final Charset charset = Charset.defaultCharset();
+	private String method;
+	private String path;
+	private String query;
+	private String requestUri;
+	private String protocolVersion;
+	private ListMultimap<String, String> headers = Multimaps.newArrayListMultimap();
+	private ListMultimap<String, String> parameters = Multimaps.newArrayListMultimap();
+	private ListMultimap<String, HttpCookie> cookies;
+	private HttpSession session;
+	private final HttpServer httpServer;
 
-    private final Charset charset = Charset.defaultCharset();
-    private String method;
-    private String path;
-    private String query;
-    private String requestUri;
-    private String protocolVersion;
-    private final Map<String, String> headers = new HashMap<String, String>();
-    private Map<String, Object> parameters;
-    private Map<String, HttpCookie> cookies;
-    private HttpSession session;
-    private final HttpServer httpServer;
+	public HttpRequest(Socket socket, HttpServer httpServer) throws IOException {
+		super(socket);
+		this.httpServer = httpServer;
+		readRequestFromStream();
+	}
 
-    public HttpRequest(Socket socket, HttpServer httpServer) throws IOException {
-        super(socket);
-        this.httpServer = httpServer;
-        init();
-    }
+	private static void putToMap(Map<String, List<String>> map, String key, String value) {
+		key = key.toLowerCase();
+		List<String> list = map.get(key);
+		if (null == list) {
+			list = new ArrayList<>(2);
+			map.put(key, list);
+		}
+		list.add(value);
+	}
 
-    private void init() throws IOException {
-        method = readWord();
-        requestUri = readWord();
-        protocolVersion = readWord();
-        String l = "";
-        while (!(l = readLine()).equals("")) {
-            int p = l.indexOf(':');
-            if (p > -1) {
-                headers.put(l.substring(0, p).trim(), l.substring(p + 1).trim());
-            }
-        }
-    }
+	private void readRequestFromStream() throws IOException {
+		method = readWord();
+		requestUri = readWord();
+		protocolVersion = readWord();
 
-    public Map<String, String> getHeaders() {
-        return headers;
-    }
+		while (true) {
+			String line = readLine();
+			if (null == line || "".equals(line)) {
+				break;
+			}
+			int p = line.indexOf(':');
+			if (p > -1) {
+				headers.put(line.substring(0, p).trim(), line.substring(p + 1).trim());
+			}
+		}
+	}
 
-    public String getMethod() {
-        return method;
-    }
+	public ListMultimap<String, String> getHeadersMap() {
+		return headers;
+	}
 
-    public String getPath() {
-        if (null == path) {
-            int i = requestUri.indexOf('?');
-            path = URLDecoder.decode(i > -1 ? requestUri.substring(0, i) : requestUri);
-        }
-        return path;
-    }
+	public String getMethod() {
+		return method;
+	}
 
-    public String getProtocolVersion() {
-        return protocolVersion;
-    }
+	public String getPath() {
+		if (null == path) {
+			int i = requestUri.indexOf('?');
+			path = URLDecoder.decode(i > -1 ? requestUri.substring(0, i) : requestUri);
+		}
+		return path;
+	}
 
-    public String getQuery() {
-        if (null == query) {
-            int i = requestUri.indexOf('?');
-            query = i > -1 ? URLDecoder.decode(requestUri.substring(i + 1)) : null;
-        }
-        return query;
-    }
+	public String getProtocolVersion() {
+		return protocolVersion;
+	}
 
-    public String getRequestUri() {
-        return requestUri;
-    }
+	public String getQuery() {
+		if (null == query) {
+			int i = requestUri.indexOf('?');
+			query = i > -1 ? URLDecoder.decode(requestUri.substring(i + 1)) : null;
+		}
+		return query;
+	}
 
-    public Map<String, Object> getParameters() throws IOException {
-        if (null == parameters) {
-            Map<String, Object> params = parseUrlEncodedParameters(getQuery(), textPlainDecoder);
-            String ct = getHeaders().get("Content-Type");
-            if (ct != null) {
-                if (ct.startsWith("application/x-www-form-urlencoded")) {
-                    params.putAll(parseUrlEncodedParameters(new String(getBytes(), getCharset()), urlEncodedDecoder));
-                } else if (ct.startsWith("multipart/form-data")) {
-                    String boundary = "";
-                    String l;
-                    while ((l = readLine()) != null) {
-                        if (l.equals("--" + boundary)) {
-                            String dispos = readLine();
-                            int p = dispos.indexOf("name=\"");
-                        }
-                    }
-                } else if (ct.startsWith("text/plain")) {
-                    params.putAll(parseUrlEncodedParameters(new String(getBytes(), getCharset()), textPlainDecoder));
-                }
-            }
-            parameters = params;
-        }
-        return parameters;
-    }
+	public String getRequestUri() {
+		return requestUri;
+	}
 
-    public Map<String, HttpCookie> getCookies() {
-        if (null == cookies) {
-            final Map<String, HttpCookie> cookies0 = C.newHashMap();
+	public ListMultimap<String, String> getParameters() throws IOException {
+		if (null == parameters) {
+			ListMultimap<String, String> params = parseUrlEncodedParameters(getQuery(), textPlainDecoder);
+			String ct = headers.getFirst(Constants.content_type);
+			if (ct != null) {
+				if (ct.startsWith("application/x-www-form-urlencoded")) {
+					params.putAll(parseUrlEncodedParameters(new String(getBytes(), getCharset()), urlEncodedDecoder));
+				} else if (ct.startsWith("multipart/form-data")) {
+					String boundary = "";
+					String l;
+					while ((l = readLine()) != null) {
+						if (l.equals("--" + boundary)) {
+							String dispos = readLine();
+							int p = dispos.indexOf("name=\"");
+						}
+					}
+				} else if (ct.startsWith("text/plain")) {
+					params.putAll(parseUrlEncodedParameters(new String(getBytes(), getCharset()), textPlainDecoder));
+				}
+			}
+			parameters = params;
+		}
+		return parameters;
+	}
 
-            ParseEventHandler handler = new ParseEventHandler() {
-                @Override
-                public void onKeyValue(String key, String value) {
-                    key = key.trim();
-                    HttpCookie cookie = new HttpCookie(key, value);
-                    cookies0.put(key, cookie);
-                }
-            };
-            String cookie = getHeaders().get("Cookie");
-            if (null != cookie) {
-                KeyValueParser.parse(cookie, '=', ';', handler);
-            }
-            cookie = getHeaders().get("Cookie2");
-            if (null != cookie) {
-                KeyValueParser.parse(cookie, '=', ';', handler);
-            }
-            cookies = cookies0;
-        }
-        return cookies;
-    }
+	public ListMultimap<String, HttpCookie> getCookies() {
+		if (null == cookies) {
+			final ListMultimap<String, HttpCookie> cookies0 = Multimaps.newArrayListMultimap();
 
-    protected Map<String, Object> parseMultipartParameters(String data) {
-        return null;
-    }
+			ParseEventHandler handler = new ParseEventHandler() {
+				@Override
+				public void onKeyValue(String key, String value) {
+					key = key.trim();
+					HttpCookie cookie = new HttpCookie(key, value);
+					cookies0.put(key, cookie);
+				}
+			};
+			getHeadersMap().get("Cookie").forEach(cookie -> KeyValueParser.parse(cookie, '=', ';', handler));
+			getHeadersMap().get("Cookie2").forEach(cookie -> KeyValueParser.parse(cookie, '=', ';', handler));
+			cookies = cookies0;
+		}
+		return cookies;
+	}
 
-    protected Map<String, Object> parseUrlEncodedParameters(String data, Decoder decoder) {
-        final Map<String, Object> parameters = new HashMap<String, Object>();
-        if (null != data) {
-            data = decoder.decode(data, getCharset().name());
-            ParseEventHandler handler = new ParseEventHandler() {
-                @Override
-                public void onKeyValue(String key, String value) {
-                    parameters.put(key, value);
-                }
-            };
-            KeyValueParser.parse(data, '=', '&', handler);
-        }
-        return parameters;
-    }
+	protected Map<String, Object> parseMultipartParameters(String data) {
+		return null;
+	}
 
-    public Charset getCharset() {
-        return charset;
-    }
+	protected ListMultimap<String, String> parseUrlEncodedParameters(String data, Decoder decoder) {
+		final ListMultimap<String, String> parameters = Multimaps.newArrayListMultimap();
+		if (null != data) {
+			data = decoder.decode(data, getCharset().name());
+			ParseEventHandler handler = new ParseEventHandler() {
+				@Override
+				public void onKeyValue(String key, String value) {
+					parameters.put(key, value);
+				}
+			};
+			KeyValueParser.parse(data, '=', '&', handler);
+		}
+		return parameters;
+	}
 
-    public HttpSession getSession() {
-        return getSession(false);
-    }
+	public Charset getCharset() {
+		return charset;
+	}
 
-    public HttpSession getSession(boolean create) {
-        if (null == session) {
-            session = httpServer.getSession(create);
-        }
-        return session;
-    }
+	public HttpSession getSession() {
+		return getSession(false);
+	}
 
-    private static final Decoder urlEncodedDecoder = new Decoder() {
-        @Override
-        public String decode(String string, String charset) {
-            try {
-                return URLDecoder.decode(string, charset);
-            } catch (UnsupportedEncodingException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    };
+	public HttpSession getSession(boolean create) {
+		if (null == session) {
+			session = httpServer.getSession(create);
+		}
+		return session;
+	}
 
-    private static final Decoder textPlainDecoder = new Decoder() {
-        @Override
-        public String decode(String string, String charset) {
-            return string;
-        }
-    };
+	private static final Decoder urlEncodedDecoder = new Decoder() {
+		@Override
+		public String decode(String string, String charset) {
+			try {
+				return URLDecoder.decode(string, charset);
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	};
 
-    private interface Decoder {
-        String decode(String string, String charset);
-    }
+	private static final Decoder textPlainDecoder = new Decoder() {
+		@Override
+		public String decode(String string, String charset) {
+			return string;
+		}
+	};
+
+	private interface Decoder {
+		String decode(String string, String charset);
+	}
+
 }

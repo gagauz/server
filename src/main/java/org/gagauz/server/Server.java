@@ -7,32 +7,36 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public abstract class Server {
-    private ExecutorService executorService;
-    private ServerSocket server;
+	private ExecutorService executorService;
+	private ServerSocket server;
 
-    private String host = "localhost";
-    private int port;
+	private String host = "localhost";
+	private int port;
 
-    public synchronized void start(int port) {
-        try {
-            server = new ServerSocket(port);
-            executorService = Executors.newFixedThreadPool(ServerConfig.getServerThreadCount());
-            Socket socket;
-            while ((socket = server.accept()) != null) {
-                executorService.execute(getAcceptor(socket));
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+	public synchronized void start(int port) {
+		try {
+			System.out.println("Starting server on " + port + " port");
+			server = new ServerSocket(port);
+			System.out.println("Allocating " + ServerConfig.getServerMaxThreadCount() + " connection threads.");
+			executorService = Executors.newFixedThreadPool(ServerConfig.getServerMaxThreadCount());
+			Socket socket;
+			System.out.println("Server started, waiting for connections...");
+			while ((socket = server.accept()) != null) {
+				executorService.execute(getAcceptor(socket));
+			}
 
-    public void stop() throws IOException {
-        executorService.shutdown();
-        server.close();
-    }
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
-    protected SocketAcceptor getAcceptor(Socket socket) {
-        return new SocketAcceptor(socket, new SocketProcessor());
-    }
+	public void stop() throws IOException {
+		executorService.shutdown();
+		server.close();
+	}
+
+	protected SocketAcceptor getAcceptor(Socket socket) {
+		return new SocketAcceptor(socket, new SocketProcessor());
+	}
 
 }

@@ -7,7 +7,7 @@ public class ServerConfig {
     private ServerConfig() {
     }
 
-    public static int getServerThreadCount() {
+    public static int getServerMaxThreadCount() {
         return serverThreadCount;
     }
 
