@@ -2,8 +2,8 @@ package org.gagauz.server;
 
 import java.io.IOException;
 
-import org.gagauz.server.api.Connection;
-import org.gagauz.server.api.Processor;
+import org.gagauz.server.api.ClientConnection;
+import org.gagauz.server.api.ConnectionListener;
 import org.gagauz.server.api.ServerConnection;
 import org.gagauz.server.api.ServerConnectionFactory;
 import org.gagauz.server.api.ThreadPool;
@@ -13,16 +13,14 @@ public abstract class Server {
 
 	protected abstract ServerConnectionFactory getServerConnectionFactory();
 
-	protected abstract Processor getProcessor();
+	protected abstract ConnectionListener getConnectionListener();
 
 	protected abstract ThreadPool getThreadPool();
 
 	public final synchronized void start(int port) {
-		System.out.println("Starting server on " + port + " port");
 		serverSocket = getServerConnectionFactory().createServerConnection(port);
-		System.out.println("Server started, waiting for connections...");
 		try {
-			while (acceptConnection(serverSocket.accept())) {
+			while (acceptClient(serverSocket.accept())) {
 				// empty cycle
 			}
 		} catch (IOException e) {
@@ -31,16 +29,18 @@ public abstract class Server {
 		}
 	}
 
-	private final boolean acceptConnection(final Connection connection) {
-		getThreadPool().append(() -> getProcessor().process(connection));
+	private final boolean acceptClient(final ClientConnection connection) {
+		getThreadPool().append(getConnectionListener().startListen(connection));
 		return true;
 	}
 
-	public final synchronized void stop() {
-		try {
-			serverSocket.close();
-		} catch (IOException e) {
-			e.printStackTrace();
+	public final void stop() {
+		synchronized (this) {
+			try {
+				serverSocket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 }

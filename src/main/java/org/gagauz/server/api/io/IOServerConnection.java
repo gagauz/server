@@ -3,7 +3,7 @@ package org.gagauz.server.api.io;
 import java.io.IOException;
 import java.net.ServerSocket;
 
-import org.gagauz.server.api.Connection;
+import org.gagauz.server.api.ClientConnection;
 import org.gagauz.server.api.ServerConnection;
 
 public class IOServerConnection implements ServerConnection {
@@ -19,7 +19,7 @@ public class IOServerConnection implements ServerConnection {
 	}
 
 	@Override
-	public Connection accept() throws IOException {
+	public ClientConnection accept() throws IOException {
 		return new IOConnection(socket.accept());
 	}
 

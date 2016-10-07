@@ -1,5 +1,5 @@
 package org.gagauz.server.api;
 
 public interface ThreadPool {
-	void append(Runnable thread);
+	void append(Runnable connection);
 }

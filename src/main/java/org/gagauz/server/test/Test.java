@@ -14,6 +14,5 @@ public class Test {
 		s.setCharset(Charset.forName("utf-8"));
 		s.setSessionIdCookieName("MYSSID");
 		s.start(8099);
-
 	}
 }

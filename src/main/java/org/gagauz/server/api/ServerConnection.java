@@ -4,7 +4,7 @@ import java.io.IOException;
 
 public interface ServerConnection {
 
-	Connection accept() throws IOException;
+	ClientConnection accept() throws IOException;
 
 	void close() throws IOException;
 

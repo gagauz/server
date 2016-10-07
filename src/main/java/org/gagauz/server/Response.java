@@ -3,13 +3,13 @@ package org.gagauz.server;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import org.gagauz.server.api.Connection;
+import org.gagauz.server.api.ClientConnection;
 
 public class Response {
 	private boolean commited;
 	private final OutputStream outputStream;
 
-	public Response(Connection connection) {
+	public Response(ClientConnection connection) {
 		outputStream = connection.getOutput();
 	}
 

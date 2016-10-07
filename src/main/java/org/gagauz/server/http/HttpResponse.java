@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.gagauz.server.Response;
-import org.gagauz.server.api.Connection;
+import org.gagauz.server.api.ClientConnection;
 
 public class HttpResponse extends Response {
 
@@ -23,7 +23,7 @@ public class HttpResponse extends Response {
 	private List<HttpCookie> cookies;
 	protected final ByteArrayOutputStream body;
 
-	public HttpResponse(Connection connection) {
+	public HttpResponse(ClientConnection connection) {
 		super(connection);
 		headers = new HashMap<>();
 		body = new ByteArrayOutputStream();

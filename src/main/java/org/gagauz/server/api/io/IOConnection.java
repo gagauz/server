@@ -6,9 +6,9 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 
-import org.gagauz.server.api.Connection;
+import org.gagauz.server.api.ClientConnection;
 
-public class IOConnection implements Connection {
+public class IOConnection implements ClientConnection {
 
 	private Socket socket;
 
@@ -62,6 +62,11 @@ public class IOConnection implements Connection {
 	@Override
 	public InetAddress getInetAddress() {
 		return socket.getInetAddress();
+	}
+
+	@Override
+	public boolean isClosed() {
+		return socket.isClosed();
 	}
 
 }

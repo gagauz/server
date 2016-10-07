@@ -4,7 +4,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
 
-public interface Connection {
+public interface ClientConnection {
 	InputStream getInput();
 
 	OutputStream getOutput();
@@ -18,4 +18,6 @@ public interface Connection {
 	int getPort();
 
 	InetAddress getInetAddress();
+
+	boolean isClosed();
 }

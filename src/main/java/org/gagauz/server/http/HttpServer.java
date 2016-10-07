@@ -1,13 +1,12 @@
 package org.gagauz.server.http;
 
-import java.net.HttpCookie;
 import java.nio.charset.Charset;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import org.gagauz.server.Server;
 import org.gagauz.server.ServerConfig;
-import org.gagauz.server.api.Processor;
+import org.gagauz.server.api.ConnectionListener;
 import org.gagauz.server.api.ServerConnectionFactory;
 import org.gagauz.server.api.ThreadPool;
 import org.gagauz.server.api.io.IOServerConnection;
@@ -53,34 +52,9 @@ public class HttpServer extends Server {
 		this.httpSessionManager = httpSessionManager;
 	}
 
-	public HttpSession getSession(boolean create) {
-		HttpSession session = null;
-		HttpRequest request = HttpRequestResponseHolder.getRequest();
-		HttpResponse response = HttpRequestResponseHolder.getResponse();
-		if (null != request) {
-			HttpCookie cookie = request.getCookies().getFirst(sessionIdCookieName);
-			if (null != cookie) {
-				session = httpSessionManager.find(cookie.getValue());
-			}
-			if (null == session && create) {
-				session = httpSessionManager.create();
-				cookie = new HttpCookie(sessionIdCookieName, session.getId());
-				response.setCookie(cookie);
-			}
-		}
-		return session;
-	}
-
 	@Override
 	protected ServerConnectionFactory getServerConnectionFactory() {
 		return IOServerConnection::new;
-	}
-
-	@Override
-	protected Processor getProcessor() {
-		return (connection) -> {
-
-		};
 	}
 
 	@Override
@@ -90,4 +64,10 @@ public class HttpServer extends Server {
 		}
 		return executor::execute;
 	}
+
+	@Override
+	protected ConnectionListener getConnectionListener() {
+		return new HttpSocketListener(this);
+	}
+
 }
